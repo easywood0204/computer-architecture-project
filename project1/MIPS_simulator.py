@@ -1,4 +1,4 @@
-from MipsSimulator import MipsSimulator
+from function import MipsSimulator
 import argparse
 
 
@@ -31,4 +31,4 @@ if __name__ == "__main__":
     instructions_list = mips_file_reader(file_path=args.file_path)
     simulator = MipsSimulator()
     simulator.disassemble(instructions_list)
-    simulator.execution_simulate(instructions_list)
+    simulator.execution_simulate()

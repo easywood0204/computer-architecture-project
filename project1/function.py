@@ -11,8 +11,8 @@ class MipsSimulator:
         self.data_end = None
         self.start_address = 64
         self.end = False
-        self.disassembly_path = "./project1/disassembly.txt"
-        self.simulation_file_path = "./project1/simulation.txt"
+        self.disassembly_path = "output/disassembly.txt"
+        self.simulation_file_path = "output/simulation.txt"
 
     def Category_1_R_TYPE(self, command):
         Rs = int(command[6:10 + 1], 2)
@@ -143,7 +143,7 @@ class MipsSimulator:
         self.data_end = now - 4
 
         now = self.start_address
-        if not os.path.exists(self.disassembly_path):
+        if not os.path.exists(os.path.dirname(self.disassembly_path)):
             os.mkdir(os.path.dirname(self.disassembly_path))
         with open(self.disassembly_path, "w") as f:
             for command in instructions:
@@ -169,7 +169,7 @@ class MipsSimulator:
                 f.writelines(w)
                 now += 4
 
-    def print_simulation(self, command: list, cycle: int, program_counter: int):
+    def print_simulation(self, command, cycle, program_counter):
         result_description = "--------------------\n"
         result_description += "Cycle:{0}\t{1}\t{2} {3}\n".format(
             cycle, program_counter, command[0], ", ".join(command[1:])
@@ -192,39 +192,35 @@ class MipsSimulator:
             result_description += "\t{0}".format(data[0])
             counter = (counter+1) % 8
         result_description += '\n\n'
-        # print(result_description)
 
-        if not os.path.exists(self.disassembly_path):
-            os.mkdir(os.path.dirname(self.disassembly_path))
-
+        if not os.path.exists(os.path.dirname(self.simulation_file_path)):
+            os.mkdir(os.path.dirname(self.simulation_file_path))
         with open(self.simulation_file_path, 'a') as f:
             f.write(result_description)
 
-    def execute_op(self, rs: int, rt: int, order: str):
+    def execute_op(self, Rs, Rt, order):
         if order == "ADD":
-            return rs + rt
+            return Rs + Rt
         elif order == "SUB":
-            return rs - rt
+            return Rs - Rt
         elif order == "MUL":
-            return rs * rt
+            return Rs * Rt
         elif order == "AND":
-            return rs & rt
+            return Rs & Rt
         elif order == "NOR":
-            return ~(rs | rt)
+            return ~(Rs | Rt)
         elif order == "SLT":
-            return rs < rt
+            return Rs < Rt
         else:
             return None
 
-    def execute_sl(self, mem_addr: int, reg_idx: int, order: str):
+    def execute_sl(self, mem_addr, reg_idx, order):
         if order == "SW":
             self.memory[str(mem_addr)][0] = self.register_list[reg_idx]
         elif order == "LW":
             self.register_list[reg_idx] = self.memory[str(mem_addr)][0]
-        else:
-            pass
 
-    def execute_shift(self, rt_value: int, imm: int, order: str):
+    def execute_shift(self, rt_value, imm, order):
         if order == "SLL":
             return rt_value << imm
         elif order == "SRL":
@@ -234,8 +230,7 @@ class MipsSimulator:
         else:
             return None
 
-    def execute_command(self, command: list, program_counter: int):
-
+    def execute_command(self, command, program_counter):
         order = command[0]
         if order == "ADD" or order == "SUB" or order == "MUL" or \
                 order == "AND" or order == "NOR" or order == "SLT":
@@ -250,8 +245,6 @@ class MipsSimulator:
                 imm = int(command[3].lstrip("#"))
                 rt_value = self.register_list[rt_reg_idx]
                 self.register_list[rs_reg_idx] = self.execute_op(rt_value, imm, order)
-            else:
-                raise Exception("ParamsError: invalid params {0} of command {1}".format(command[3], order))
         elif order == "SW" or order == "LW":
             reg_idx = int(command[1].lstrip('R'))
             mem_addr = re.split("[()]", command[2])
@@ -268,7 +261,6 @@ class MipsSimulator:
             return None
         elif order == "NOP":
             pass
-        # Branch and jump
         elif order == "J":
             return int(command[1].lstrip("#"))
         elif order == "JR":
@@ -294,19 +286,17 @@ class MipsSimulator:
             rs_value = self.register_list[rs_reg_idx]
             if rs_value > 0:
                 program_counter = program_counter + offset
-        else:
-            raise Exception("Branch Error: Unknown instruction type:{}".format(order))
 
         return program_counter + 4
 
-    def execution_simulate(self, instructions: list[str]):
-        program_counter = self.start_address
-        cycle_counter = 1
-        while True:
-            command = self.memory[str(program_counter)]
-            new_program_counter = self.execute_command(command=command, program_counter=program_counter)
-            self.print_simulation(command=command, cycle=cycle_counter, program_counter=program_counter)
-            program_counter = new_program_counter
-            cycle_counter += 1
-            if program_counter is None:
-                break
+    def execution_simulate(self):
+        if os.path.exists(self.simulation_file_path):
+            os.remove(self.simulation_file_path)
+        PC = self.start_address
+        Cycle = 1
+        while PC:
+            command = self.memory[str(PC)]
+            new_program_counter = self.execute_command(command, PC)
+            self.print_simulation(command, Cycle, PC)
+            PC = new_program_counter
+            Cycle += 1
