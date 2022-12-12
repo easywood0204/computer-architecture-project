@@ -31,4 +31,5 @@ if __name__ == "__main__":
     instructions_list = mips_file_reader(file_path=args.file_path)
     simulator = MipsSimulator()
     simulator.disassemble(instructions_list)
-    simulator.execution_simulate()
+    # simulator.execution_simulate()
+    simulator.pipelined_simulate()
